@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resto Trainer</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface-2: #f0f0ee;
+    --border: #e0e0dc;
+    --text: #1a1a1a;
+    --text-muted: #888884;
+    --green: #2d7a4f;
+    --green-light: #e8f5ee;
+    --green-dark: #1f5a38;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --accent: #2d7a4f;
+    --coin: #b8860b;
+    --note: #2d5a8e;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    --font: 'DM Sans', 'Segoe UI', sans-serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  html { font-size: 16px; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== LAYOUT ===== */
+  .app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 32px 0 24px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .header h1 span {
+    color: var(--green);
+  }
+  .header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 2px 8px rgba(45,122,79,0.3);
+  }
+  .tab-btn:hover:not(.active) {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  /* ===== SECTIONS ===== */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== CARD ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* ===== EXERCISE DISPLAY ===== */
+  .exercise-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+  .ex-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+  .ex-box .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .ex-box .amount {
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .ex-box.price .amount { color: var(--red); }
+  .ex-box.paid  .amount { color: var(--green-dark); }
+
+  /* ===== INSERTED RESTO ===== */
+  .resto-display {
+    text-align: center;
+    padding: 16px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border);
+    margin-bottom: 0;
+    transition: border-color 0.2s;
+  }
+  .resto-display.has-value { border-color: var(--green); border-style: solid; }
+  .resto-display .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .resto-display .amount {
+    font-family: var(--font-mono);
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  /* ===== COINS & NOTES ===== */
+  .denomination-group { margin-bottom: 0; }
+  .denom-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .denom-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .denom-btn {
+    padding: 10px 14px;
+    border: 1.5px solid;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 60px;
+    text-align: center;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .denom-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .denom-btn:active::after { opacity: 0.08; }
+
+  .denom-btn.coin {
+    background: #fffbf0;
+    border-color: #d4a017;
+    color: #7a5a00;
+  }
+  .denom-btn.coin:hover {
+    background: #fff3cc;
+    border-color: var(--coin);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184,134,11,0.2);
+  }
+  .denom-btn.note {
+    background: #f0f4ff;
+    border-color: #6080c0;
+    color: #1e3a6e;
+  }
+  .denom-btn.note:hover {
+    background: #e0e8ff;
+    border-color: var(--note);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45,90,142,0.2);
+  }
+
+  /* Selected coins tracker */
+  .selected-list {
+    min-height: 28px;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    line-height: 1.5;
+    word-break: break-all;
+  }
+  .selected-list span {
+    display: inline-block;
+    background: var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 2px;
+    color: var(--text);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .selected-list span:hover { background: #f0a0a0; }
+
+  /* ===== FEEDBACK ===== */
+  .feedback {
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: none;
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .feedback.show { display: block; }
+  .feedback.success {
+    background: var(--green-light);
+    color: var(--green-dark);
+    border: 1px solid #a8d5b8;
+  }
+  .feedback.error {
+    background: var(--red-light);
+    color: var(--red);
+    border: 1px solid #f5c6c2;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 2px 8px rgba(45,122,79,0.3);
+  }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(45,122,79,0.35); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger {
+    background: var(--red-light);
+    color: var(--red);
+    border: 1px solid #f5c6c2;
+  }
+  .btn-danger:hover { background: #fbd5d2; }
+  .btn-full { width: 100%; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-row .btn { flex: 1; }
+
+  /* ===== CALCULATOR INPUTS ===== */
+  .input-group {
+    margin-bottom: 16px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .input-group input::-webkit-outer-spin-button,
+  .input-group input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(45,122,79,0.1);
+  }
+  .input-suffix {
+    position: relative;
+  }
+  .input-suffix::after {
+    content: '€';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-family: var(--font);
+    pointer-events: none;
+  }
+  .input-suffix input { padding-right: 32px; }
+  .pct-suffix::after { content: '%'; }
+
+  /* ===== RESULT BOXES ===== */
+  .result-box {
+    background: var(--green-light);
+    border: 1px solid #a8d5b8;
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+  .result-box .r-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green-dark);
+    margin-bottom: 4px;
+  }
+  .result-box .r-value {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--green-dark);
+    letter-spacing: -0.02em;
+  }
+  .result-box.discount {
+    background: #fff8e8;
+    border-color: #e8d080;
+  }
+  .result-box.discount .r-label,
+  .result-box.discount .r-value { color: #7a5a00; }
+  .result-box.saved {
+    background: #edf5ff;
+    border-color: #90b8e8;
+  }
+  .result-box.saved .r-label,
+  .result-box.saved .r-value { color: #1e3a6e; }
+
+  /* ===== BREAKDOWN ===== */
+  .breakdown {
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .breakdown .bd-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .breakdown-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .bd-chip.coin-chip {
+    background: #fffbf0;
+    border: 1.5px solid #d4a017;
+    color: #7a5a00;
+  }
+  .bd-chip.note-chip {
+    background: #f0f4ff;
+    border: 1.5px solid #6080c0;
+    color: #1e3a6e;
+  }
+  .bd-chip .qty {
+    font-size: 0.7rem;
+    background: rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 1px 5px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 0;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .exercise-grid { grid-template-columns: 1fr 1fr; }
+    .ex-box .amount { font-size: 1.5rem; }
+    .resto-display .amount { font-size: 1.8rem; }
+    .denom-btn { min-width: 52px; padding: 9px 10px; font-size: 0.8rem; }
+    .tab-btn { font-size: 0.72rem; padding: 10px 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Resto<span>Trainer</span></h1>
+    <p>Allenati con il resto, calcola e applica sconti</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" onclick="switchTab('train')" id="tab-train">🎯 Allenamento</button>
+    <button class="tab-btn" onclick="switchTab('calc')" id="tab-calc">🧮 Calcola Resto</button>
+    <button class="tab-btn" onclick="switchTab('discount')" id="tab-discount">🏷️ Sconti</button>
+  </div>
+
+  <!-- ===================== -->
+  <!-- SEZIONE 1: ALLENAMENTO -->
+  <!-- ===================== -->
+  <div class="section active" id="section-train">
+
+    <!-- Esercizio corrente -->
+    <div class="card">
+      <div class="card-title">Esercizio</div>
+      <div class="exercise-grid">
+        <div class="ex-box price">
+          <div class="label">Da pagare</div>
+          <div class="amount" id="train-price">—</div>
+        </div>
+        <div class="ex-box paid">
+          <div class="label">Pagato</div>
+          <div class="amount" id="train-paid">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resto inserito -->
+    <div class="card">
+      <div class="card-title">Resto inserito</div>
+      <div class="resto-display" id="resto-display">
+        <div class="label">Totale</div>
+        <div class="amount" id="train-inserted">0,00 €</div>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="card-title" style="margin-bottom:6px">Taglio selezionati <span style="font-size:0.65rem;color:var(--text-muted)">(clicca per rimuovere)</span></div>
+        <div class="selected-list" id="selected-list">
+          <span style="background:transparent;color:var(--text-muted);font-family:var(--font);font-size:0.8rem;">Nessun taglio aggiunto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tagli disponibili -->
+    <div class="card">
+      <div class="denomination-group">
+        <div class="denom-label">🪙 Monete</div>
+        <div class="denom-grid" id="coins-grid"></div>
+      </div>
+      <div class="divider" style="margin: 16px 0;"></div>
+      <div class="denomination-group">
+        <div class="denom-label">💶 Banconote</div>
+        <div class="denom-grid" id="notes-grid"></div>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="feedback" id="train-feedback"></div>
+
+    <!-- Azioni -->
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-secondary" onclick="trainReset()">↺ Reset</button>
+      <button class="btn btn-primary" onclick="trainVerify()">✓ Verifica</button>
+    </div>
+    <button class="btn btn-secondary btn-full" style="margin-top:10px;" onclick="trainNew()">→ Nuovo Esercizio</button>
+
+  </div><!-- end section-train -->
+
+
+  <!-- ========================= -->
+  <!-- SEZIONE 2: CALCOLA RESTO  -->
+  <!-- ========================= -->
+  <div class="section" id="section-calc">
+
+    <div class="card">
+      <div class="card-title">Inserisci i valori</div>
+
+      <div class="input-group">
+        <label>Prezzo da pagare</label>
+        <div class="input-suffix">
+          <input type="number" id="calc-price" placeholder="0,00" min="0" step="0.01" oninput="calcResult()">
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <label>Importo dato dal cliente</label>
+        <div class="input-suffix">
+          <input type="number" id="calc-paid" placeholder="0,00" min="0" step="0.01" oninput="calcResult()">
+        </div>
+      </div>
+    </div>
+
+    <div id="calc-result-area" style="display:none;">
+      <div class="result-box">
+        <div class="r-label">💶 Resto da dare</div>
+        <div class="r-value" id="calc-result-value">—</div>
+      </div>
+
+      <div class="breakdown">
+        <div class="bd-title">Possibile composizione del resto</div>
+        <div class="breakdown-items" id="calc-breakdown"></div>
+      </div>
+    </div>
+
+    <div id="calc-empty" class="empty-state">Inserisci i valori sopra per calcolare il resto</div>
+
+    <div id="calc-error" style="display:none;" class="feedback error show" style="margin-top:8px;"></div>
+
+  </div><!-- end section-calc -->
+
+
+  <!-- ========================= -->
+  <!-- SEZIONE 3: CALCOLO SCONTI -->
+  <!-- ========================= -->
+  <div class="section" id="section-discount">
+
+    <div class="card">
+      <div class="card-title">Inserisci i valori</div>
+
+      <div class="input-group">
+        <label>Prezzo originale</label>
+        <div class="input-suffix">
+          <input type="number" id="disc-price" placeholder="0,00" min="0" step="0.01" oninput="calcDiscount()">
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <label>Percentuale di sconto</label>
+        <div class="input-suffix pct-suffix">
+          <input type="number" id="disc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDiscount()">
+        </div>
+      </div>
+    </div>
+
+    <div id="disc-result-area" style="display:none;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="result-box discount">
+          <div class="r-label">💰 Prezzo scontato</div>
+          <div class="r-value" id="disc-result-price">—</div>
+        </div>
+        <div class="result-box saved">
+          <div class="r-label">🎉 Risparmio</div>
+          <div class="r-value" id="disc-result-saved">—</div>
+        </div>
+      </div>
+
+      <div class="breakdown">
+        <div class="bd-title">Riepilogo</div>
+        <div id="disc-summary" style="font-size:0.88rem;color:var(--text);line-height:1.7;"></div>
+      </div>
+    </div>
+
+    <div id="disc-empty" class="empty-state">Inserisci il prezzo e la percentuale di sconto</div>
+
+  </div><!-- end section-discount -->
+
+</div><!-- end app -->
+
+<script>
+/* ========================================
+   UTILITY FUNCTIONS
+   ======================================== */
+
+/** Formatta un valore in centesimi come stringa euro (es: 1370 → "13,70 €") */
+function formatEuro(cents) {
+  const euros = cents / 100;
+  return euros.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+/** Converte un numero float in centesimi interi (evita floating point) */
+function toCents(val) {
+  return Math.round(parseFloat(val) * 100);
+}
+
+/**
+ * Calcola la combinazione ottimale di tagli per un dato importo in centesimi.
+ * Usa un approccio greedy dai tagli più grandi.
+ */
+function makeChange(amountCents) {
+  const denominations = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+  const result = [];
+  let remaining = amountCents;
+  for (const d of denominations) {
+    const count = Math.floor(remaining / d);
+    if (count > 0) {
+      result.push({ value: d, count });
+      remaining -= d * count;
+    }
+    if (remaining === 0) break;
+  }
+  return result;
+}
+
+/** Distingue monete da banconote */
+function isNote(cents) {
+  return cents >= 500; // 5€ e oltre
+}
+
+/** Formatta il valore di un taglio (es: 50 → "0,50 €", 500 → "5,00 €") */
+function formatDenom(cents) {
+  if (cents < 100) return (cents) + ' ct';
+  return (cents / 100).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+}
+
+/* ========================================
+   TAB NAVIGATION
+   ======================================== */
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+/* ========================================
+   SEZIONE 1: ALLENAMENTO RESTI
+   ======================================== */
+
+// Tagli disponibili in centesimi
+const COINS = [1, 2, 5, 10, 20, 50, 100, 200];       // monete
+const NOTES = [500, 1000, 2000, 5000];                 // banconote
+
+// Tagli cliente utilizzabili (valori interi ragionevoli)
+const CLIENT_DENOMINATIONS = [100, 200, 500, 1000, 2000, 5000];
+
+let trainPriceCents = 0;    // prezzo da pagare
+let trainPaidCents  = 0;    // quanto ha dato il cliente
+let trainInsertedCents = 0; // quanto ha inserito l'utente
+let trainSelectedItems = []; // {value: cents, label: string}
+
+/** Inizializza la griglia dei tagli cliccabili */
+function buildDenomGrids() {
+  const coinsGrid = document.getElementById('coins-grid');
+  const notesGrid = document.getElementById('notes-grid');
+  coinsGrid.innerHTML = '';
+  notesGrid.innerHTML = '';
+
+  COINS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'denom-btn coin';
+    btn.textContent = formatDenom(c);
+    btn.onclick = () => trainAddDenom(c, formatDenom(c));
+    coinsGrid.appendChild(btn);
+  });
+
+  NOTES.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'denom-btn note';
+    btn.textContent = formatDenom(n);
+    btn.onclick = () => trainAddDenom(n, formatDenom(n));
+    notesGrid.appendChild(btn);
+  });
+}
+
+/** Genera un nuovo esercizio */
+function trainNew() {
+  // Prezzo casuale tra 0.01 e 49.99
+  const priceCents = Math.floor(Math.random() * 4999) + 1;
+
+  // Sceglie un taglio cliente >= prezzo
+  const validDenoms = CLIENT_DENOMINATIONS.filter(d => d >= priceCents);
+  // Se nessun taglio singolo copre il prezzo, usa una combinazione di 50€
+  let paidCents;
+  if (validDenoms.length > 0) {
+    paidCents = validDenoms[Math.floor(Math.random() * validDenoms.length)];
+  } else {
+    // Arrotonda al multiplo di 5000 superiore
+    paidCents = Math.ceil(priceCents / 5000) * 5000;
+  }
+
+  trainPriceCents    = priceCents;
+  trainPaidCents     = paidCents;
+  trainInsertedCents = 0;
+  trainSelectedItems = [];
+
+  document.getElementById('train-price').textContent    = formatEuro(trainPriceCents);
+  document.getElementById('train-paid').textContent     = formatEuro(trainPaidCents);
+  document.getElementById('train-inserted').textContent = formatEuro(0);
+
+  const restDisp = document.getElementById('resto-display');
+  restDisp.classList.remove('has-value');
+
+  document.getElementById('selected-list').innerHTML =
+    '<span style="background:transparent;color:var(--text-muted);font-family:var(--font);font-size:0.8rem;">Nessun taglio aggiunto</span>';
+
+  const fb = document.getElementById('train-feedback');
+  fb.className = 'feedback';
+  fb.textContent = '';
+}
+
+/** Aggiunge un taglio al totale inserito */
+function trainAddDenom(cents, label) {
+  trainInsertedCents += cents;
+  trainSelectedItems.push({ value: cents, label });
+  updateTrainDisplay();
+
+  // Nasconde feedback precedente se l'utente modifica
+  const fb = document.getElementById('train-feedback');
+  fb.className = 'feedback';
+}
+
+/** Rimuove un taglio per indice */
+function trainRemoveDenom(index) {
+  trainInsertedCents -= trainSelectedItems[index].value;
+  trainSelectedItems.splice(index, 1);
+  updateTrainDisplay();
+}
+
+/** Aggiorna la visualizzazione del resto inserito */
+function updateTrainDisplay() {
+  document.getElementById('train-inserted').textContent = formatEuro(trainInsertedCents);
+
+  const restDisp = document.getElementById('resto-display');
+  restDisp.classList.toggle('has-value', trainInsertedCents > 0);
+
+  const listEl = document.getElementById('selected-list');
+  if (trainSelectedItems.length === 0) {
+    listEl.innerHTML = '<span style="background:transparent;color:var(--text-muted);font-family:var(--font);font-size:0.8rem;">Nessun taglio aggiunto</span>';
+  } else {
+    listEl.innerHTML = trainSelectedItems.map((item, i) =>
+      `<span onclick="trainRemoveDenom(${i})" title="Clicca per rimuovere">${item.label}</span>`
+    ).join('');
+  }
+}
+
+/** Azzera i tagli inseriti */
+function trainReset() {
+  trainInsertedCents = 0;
+  trainSelectedItems = [];
+  updateTrainDisplay();
+  const fb = document.getElementById('train-feedback');
+  fb.className = 'feedback';
+}
+
+/** Verifica se il resto inserito è corretto */
+function trainVerify() {
+  if (trainPriceCents === 0) {
+    const fb = document.getElementById('train-feedback');
+    fb.className = 'feedback error show';
+    fb.textContent = '⚠️ Genera prima un esercizio con il pulsante "Nuovo Esercizio".';
+    return;
+  }
+
+  const correctResto = trainPaidCents - trainPriceCents;
+  const fb = document.getElementById('train-feedback');
+
+  if (trainInsertedCents === correctResto) {
+    fb.className = 'feedback success show';
+    fb.textContent = `✅ Corretto! Il resto di ${formatEuro(correctResto)} è esatto.`;
+  } else {
+    const diff = trainInsertedCents - correctResto;
+    const sign = diff > 0 ? 'in più' : 'in meno';
+    fb.className = 'feedback error show';
+    fb.innerHTML = `❌ Sbagliato. Il resto corretto è <strong>${formatEuro(correctResto)}</strong>.`
+      + ` Hai inserito ${formatEuro(trainInsertedCents)} (${formatEuro(Math.abs(diff))} ${sign}).`;
+  }
+}
+
+/* ========================================
+   SEZIONE 2: CALCOLA RESTO
+   ======================================== */
+function calcResult() {
+  const priceInput = document.getElementById('calc-price').value;
+  const paidInput  = document.getElementById('calc-paid').value;
+  const resultArea = document.getElementById('calc-result-area');
+  const emptyState = document.getElementById('calc-empty');
+  const errorEl    = document.getElementById('calc-error');
+
+  errorEl.style.display = 'none';
+  errorEl.className = 'feedback error';
+
+  if (!priceInput || !paidInput) {
+    resultArea.style.display = 'none';
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  const priceCents = toCents(priceInput);
+  const paidCents  = toCents(paidInput);
+
+  if (paidCents < priceCents) {
+    resultArea.style.display = 'none';
+    emptyState.style.display = 'none';
+    errorEl.style.display = 'block';
+    errorEl.classList.add('show');
+    errorEl.textContent = '⚠️ L\'importo pagato è inferiore al prezzo.';
+    return;
+  }
+
+  const restoCents = paidCents - priceCents;
+
+  document.getElementById('calc-result-value').textContent = formatEuro(restoCents);
+
+  // Composizione
+  const breakdown = makeChange(restoCents);
+  renderBreakdown('calc-breakdown', breakdown);
+
+  resultArea.style.display = 'block';
+  emptyState.style.display = 'none';
+}
+
+/** Renderizza la lista di tagli */
+function renderBreakdown(containerId, breakdown) {
+  const el = document.getElementById(containerId);
+  if (breakdown.length === 0) {
+    el.innerHTML = '<span style="color:var(--text-muted);font-size:0.82rem;">Nessun resto da dare.</span>';
+    return;
+  }
+  el.innerHTML = breakdown.map(item => {
+    const cls = isNote(item.value) ? 'note-chip' : 'coin-chip';
+    const qtyHtml = item.count > 1 ? `<span class="qty">×${item.count}</span>` : '';
+    return `<span class="bd-chip ${cls}">${formatDenom(item.value)}${qtyHtml}</span>`;
+  }).join('');
+}
+
+/* ========================================
+   SEZIONE 3: CALCOLO SCONTI
+   ======================================== */
+function calcDiscount() {
+  const priceInput = document.getElementById('disc-price').value;
+  const pctInput   = document.getElementById('disc-pct').value;
+  const resultArea = document.getElementById('disc-result-area');
+  const emptyState = document.getElementById('disc-empty');
+
+  if (!priceInput || !pctInput) {
+    resultArea.style.display = 'none';
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  const priceCents   = toCents(priceInput);
+  const pct          = parseFloat(pctInput);
+
+  if (pct < 0 || pct > 100) {
+    emptyState.style.display = 'block';
+    emptyState.textContent = '⚠️ La percentuale deve essere tra 0 e 100.';
+    resultArea.style.display = 'none';
+    return;
+  }
+  emptyState.textContent = 'Inserisci il prezzo e la percentuale di sconto';
+
+  // Calcolo in centesimi per evitare floating point
+  const savedCents    = Math.round(priceCents * pct / 100);
+  const discountCents = priceCents - savedCents;
+
+  document.getElementById('disc-result-price').textContent = formatEuro(discountCents);
+  document.getElementById('disc-result-saved').textContent = formatEuro(savedCents);
+
+  document.getElementById('disc-summary').innerHTML =
+    `Prezzo originale: <strong>${formatEuro(priceCents)}</strong><br>
+     Sconto del <strong>${pct}%</strong> → risparmi <strong>${formatEuro(savedCents)}</strong><br>
+     Prezzo finale: <strong>${formatEuro(discountCents)}</strong>`;
+
+  resultArea.style.display = 'block';
+  emptyState.style.display = 'none';
+}
+
+/* ========================================
+   INIZIALIZZAZIONE
+   ======================================== */
+buildDenomGrids();
+trainNew();
+</script>
+</body>
+</html>
